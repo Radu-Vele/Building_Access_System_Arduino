@@ -1,5 +1,6 @@
 #include "rfid_fun.h"
 
+// TODO: modify it to return a string
 bool processRFID(MFRC522 rfid) {
   if ( !rfid.PICC_IsNewCardPresent()) { 
     return false;
@@ -12,6 +13,12 @@ bool processRFID(MFRC522 rfid) {
   String uid = retrieveCardUID(rfid);
 
   //TODO: compare with eeprom content
+  if(uid.equals(" 31 1D 1C 1D")) {
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 String retrieveCardUID(MFRC522 rfid) {

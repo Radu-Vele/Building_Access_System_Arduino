@@ -14,7 +14,7 @@
 #include <MFRC522.h>
 #include <SPI.h>
 
-#define DEBUG_ON
+//#define DEBUG_ON
 
 /**
  * Process RFID card:
