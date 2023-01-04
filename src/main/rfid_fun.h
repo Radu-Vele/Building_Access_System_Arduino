@@ -18,9 +18,8 @@
 
 /**
  * Process RFID card:
- * - check for presence (not present => false)
- * - compare with EEPROM content to return true if the UID is recognized
+ * - returns the UID in case of succes or empty string in case of failure
 */
-bool processRFID(MFRC522 rfid);
+String processRFID(MFRC522 rfid);
 String retrieveCardUID(MFRC522 rfid);
 #endif

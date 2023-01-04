@@ -1,24 +1,16 @@
 #include "rfid_fun.h"
 
-// TODO: modify it to return a string
-bool processRFID(MFRC522 rfid) {
+String processRFID(MFRC522 rfid) {
   if ( !rfid.PICC_IsNewCardPresent()) { 
-    return false;
+    return "";
   }
 
   if ( !rfid.PICC_ReadCardSerial()) { //select one of the cards
-    return false; 
+    return ""; 
   }
 
   String uid = retrieveCardUID(rfid);
-
-  //TODO: compare with eeprom content
-  if(uid.equals(" 31 1D 1C 1D")) {
-    return true;
-  }
-  else {
-    return false;
-  }
+  return uid;
 }
 
 String retrieveCardUID(MFRC522 rfid) {
@@ -37,5 +29,5 @@ String retrieveCardUID(MFRC522 rfid) {
   Serial.println(content);
   #endif
   
-  return content; //return without first digit
+  return content.substring(1); 
 }

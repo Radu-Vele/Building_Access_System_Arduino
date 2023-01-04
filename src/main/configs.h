@@ -1,12 +1,12 @@
 #ifndef CONFIGS_H
 #define CONFIGS_H
 #include <Arduino.h>
-
 #include "eeprom_fun.h"
 #include "ultrasound_fun.h"
 #include "rfid_fun.h"
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h> 
+#include <Servo.h>
 
 #define US_TRIG_PIN 6
 #define US_ECHO_PIN 7
@@ -18,6 +18,10 @@
 #define BACKLIGHT_PIN 3         // Declaring LCD Pins
 
 #define SLEEP_AFTER_ms 10000
+#define WELCOME_MSG_L1 "Welcome!"
+#define WELCOME_MSG_L2 "Scan your card!"
+#define ASLEEP_MSG "Zzz..."
+
 
 //Keypad PINs
 //white
@@ -37,5 +41,12 @@
 #define K_C3 28
 //yellow
 #define K_C4 29
+
+//#define INIT_EEPROM
+
+#define SERVO_PIN 3
+#define SERVO_OPEN_ANGLE 90
+#define SERVO_CLOSE_ANGLE 0
+#define SERVO_DELAY 1000
 
 #endif

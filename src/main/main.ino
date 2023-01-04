@@ -6,8 +6,10 @@ volatile long prvMillisSleep = 0;
 LiquidCrystal_I2C lcd(I2C_ADDR, 16, 2);
 MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN); //RFID object
 int curr_eeprom_address;
+Servo myServo;
+char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH + 1]; //array of null-ended strings
+int UIDStringsArray_size; //number of elements in the array
 
-char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH];
 void setup() {
   // Ultrasound init
   pinMode(US_TRIG_PIN, OUTPUT);
@@ -31,15 +33,14 @@ void setup() {
 
   //EEPROM init
   curr_eeprom_address = EEPROM_START_ADDRESS;
-  
-  //store initial codes in eeprom
-  //storeInitialCodes(); 
+  #ifdef INIT_EEPROM
+  storeInitialCodes();   //store initial codes in eeprom
+  #endif
+  retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH); //load eeprom data in UIDStringsArray
 
-  retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH, UIDStringsArray);
-  for(int i = 0; i < 2; i++) {
-    //Serial.println(memUIDArrContent[i]);
-  }
-  freeMemUIDArrContent();
+  //Servo init
+  myServo.attach(SERVO_PIN);
+  myServo.write(SERVO_CLOSE_ANGLE);
 }
 
 void writeLineToLcd(int lineNr, String text, bool clscr) {
@@ -54,9 +55,7 @@ void checkProximity() {
   if(userInProximity(US_TRIG_PIN, US_ECHO_PIN)){
     awake = 1;
     prvMillisSleep = millis();
-    
-    writeLineToLcd(0, "Welcome!", true);
-    writeLineToLcd(1, "Scan your card!", false);
+    setWelcomeMessage();
   }
 }
 
@@ -68,23 +67,43 @@ void checkSleepMode() {
   
   if((currMillis - prvMillisSleep >= SLEEP_AFTER_ms) && (awake == 1)) {
     awake = 0;
-    writeLineToLcd(0, "Zzz...", true);
+    writeLineToLcd(0, ASLEEP_MSG, true);
     prvMillisSleep = currMillis;
   }
 }
 
-void loop() {
-  /*
+void allowAccess() {
+  writeLineToLcd(0, "Authorized access", true);
+  myServo.write(SERVO_OPEN_ANGLE);
+  delay(SERVO_DELAY);     
+  myServo.write(SERVO_CLOSE_ANGLE);
+  writeLineToLcd(0, "Authorized access", true);
+}
+
+void setWelcomeMessage() {
+    writeLineToLcd(0, WELCOME_MSG_L1, true);
+    writeLineToLcd(1, WELCOME_MSG_L2, false);
+}
+
+void loop() {  
   checkSleepMode();
   
   if(awake == 0) {
     checkProximity(); //need to check only if awake is 0, the sleep mode is induced by internal timers  
   }
   else { //only check for card if someone is close
-    if(processRFID(mfrc522)) {
-      prvMillisSleep = millis();
-      writeLineToLcd(0, "Authorized access", true);
+    String uid = processRFID(mfrc522);
+    if(!uid.equals("")) {
+      if(presentInUIDArray(uid)) {
+        prvMillisSleep = millis();
+        allowAccess();
+        setWelcomeMessage();
+      }
+      else {
+        writeLineToLcd(0, "Access denied", true);
+        delay(SERVO_DELAY);     
+        setWelcomeMessage();
+      }
     }
   }
-  */
 }
