@@ -37,5 +37,5 @@ String retrieveCardUID(MFRC522 rfid) {
   Serial.println(content);
   #endif
   
-  return content;
+  return content; //return without first digit
 }

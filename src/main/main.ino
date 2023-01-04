@@ -1,25 +1,13 @@
-#include "ultrasound_fun.h"
-#include "rfid_fun.h"
-#include <LiquidCrystal_I2C.h>
+#include "configs.h"
 
-#define US_TRIG_PIN 6
-#define US_ECHO_PIN 7
-
-#define RFID_SS_PIN 53
-#define RFID_RST_PIN 5
-
-#define I2C_ADDR 0x27           //I2C adress, you should use the code to scan the adress first (0x27) here
-#define BACKLIGHT_PIN 3         // Declaring LCD Pins
-
-#define SLEEP_AFTER_ms 10000
-
+/* GLOBALS */
 volatile int awake;
 volatile long prvMillisSleep = 0;
-
 LiquidCrystal_I2C lcd(I2C_ADDR, 16, 2);
-
 MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN); //RFID object
+int curr_eeprom_address;
 
+char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH];
 void setup() {
   // Ultrasound init
   pinMode(US_TRIG_PIN, OUTPUT);
@@ -39,8 +27,19 @@ void setup() {
   lcd.init();
   lcd.backlight(); //Lighting backlight
   lcd.setCursor(0,0);
-  lcd.print("Initialized ok");      //What's written on the LCD you can change
-          
+  lcd.print("Initialized ok");
+
+  //EEPROM init
+  curr_eeprom_address = EEPROM_START_ADDRESS;
+  
+  //store initial codes in eeprom
+  //storeInitialCodes(); 
+
+  retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH, UIDStringsArray);
+  for(int i = 0; i < 2; i++) {
+    //Serial.println(memUIDArrContent[i]);
+  }
+  freeMemUIDArrContent();
 }
 
 void writeLineToLcd(int lineNr, String text, bool clscr) {
@@ -75,7 +74,7 @@ void checkSleepMode() {
 }
 
 void loop() {
-
+  /*
   checkSleepMode();
   
   if(awake == 0) {
@@ -83,7 +82,9 @@ void loop() {
   }
   else { //only check for card if someone is close
     if(processRFID(mfrc522)) {
+      prvMillisSleep = millis();
       writeLineToLcd(0, "Authorized access", true);
     }
   }
+  */
 }
