@@ -99,12 +99,15 @@ bool presentInUIDArray(String uid, int* index) {
   return false;
 }
 
-bool presentInKeyCodeArray(String readCode) {
+bool presentInKeyCodeArray(String readCode, int* index) {
   char charArrKey[KEY_CODE_LENGTH + 1];
   readCode.toCharArray(charArrKey, KEY_CODE_LENGTH + 1);
   charArrKey[KEY_CODE_LENGTH] = '\0';
   for(int i = 0; i < keyCodeStringsArraySize; i++) {
     if(strcmp(charArrKey, keyCodeStringsArray[i]) == 0) {
+      if(index) {
+        *index = i;
+      }
       return true;
     }
   }

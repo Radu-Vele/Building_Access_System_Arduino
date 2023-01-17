@@ -152,19 +152,48 @@ void parseBluetoothCommand() {
         Serial1.write(ERR_AUTH);
       }
     }
-    else if (command.equals("auth")) {
-      //TODO: get a password that must match any keycode memory entry but the first;
-      userAuth = true;
+    else if (command.startsWith("auth")) {
+      String password = command.substring(4);
+      int index;
+      if(presentInKeyCodeArray(password, &index)){
+        if(index == 0) {
+          Serial1.write(ERR_PASSW); //consider providing the admin password as a user incorrect (security reasons)
+        }
+        else {
+          userAuth = true;
+        }
+      }
+      else {
+        Serial1.write(ERR_PASSW);
+      }      
     }
-    
   }
   else if(bluetoothCommandReceived.startsWith("{admin ")) {
     String command = bluetoothCommandReceived.substring(7, bluetoothCommandReceived.length() - 2); //get actual command
+    
     adminMode = true;
     writeLineToLcd(0, "Admin mode", true);
-    if(command.equals("auth")) {
+    
+    if (command.startsWith("auth")) {
+      String password = command.substring(4);
+      int index;
+      if(presentInKeyCodeArray(password, &index)){
+        if(index != 0) {
+          Serial1.write(ERR_PASSW); //consider providing the admin password as a user incorrect (security reasons)
+          adminMode = false;
+          writeLineToLcd(0, "User mode", true);
+        }
+        else {
+          adminAuth = true;
+        }
+      }
+      else {
+        Serial1.write(ERR_PASSW);
+        adminMode = false;
+        writeLineToLcd(0, "User mode", true);
+      }  
+      
       // TODO: Get a password that must match with the first element of the keycode array
-      adminAuth = true;
     }
     else if(command.equals("access")) {
       if(adminAuth) {
@@ -271,7 +300,7 @@ void userModeFlow() {
       char key = myKeypad.getKey();
       if(key) {
         String keypadCode = retrieveKeyCode(myKeypad, key);
-        if(presentInKeyCodeArray(keypadCode)) {
+        if(presentInKeyCodeArray(keypadCode, NULL)) {
           prvMillisSleep = millis();
           allowAccess();
           setWelcomeMessage();

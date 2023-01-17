@@ -37,7 +37,7 @@ void storeInitialCodes();
 
 // Check if receive input is present in the EEPROM
 bool presentInUIDArray(String uid, int* index);
-bool presentInKeyCodeArray(String readCode);
+bool presentInKeyCodeArray(String readCode, int* index);
 
 /**
  * Overwrite memory with the new version of the array of data

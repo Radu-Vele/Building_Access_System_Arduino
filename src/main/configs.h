@@ -25,7 +25,8 @@
 #define ERR_AUTH "ERR Auth"
 #define ERR_ALREADY_IN "ERR AlreadyIn"
 #define ERR_NOT_PRESENT "ERR UID Not Present"
-
+#define ERR_PASSW "ERR Password not correct"
+ 
 //#define INIT_EEPROM
 
 #define SERVO_PIN 3
