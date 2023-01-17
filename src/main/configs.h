@@ -4,6 +4,7 @@
 #include "eeprom_fun.h"
 #include "ultrasound_fun.h"
 #include "rfid_fun.h"
+#include "keypad_fun.h"
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h> 
 #include <Servo.h>
@@ -21,6 +22,7 @@
 #define WELCOME_MSG_L1 "Welcome!"
 #define WELCOME_MSG_L2 "Scan your card!"
 #define ASLEEP_MSG "Zzz..."
+#define CODE_MSG "Enter your code!"
 
 
 //Keypad PINs
@@ -48,5 +50,4 @@
 #define SERVO_OPEN_ANGLE 90
 #define SERVO_CLOSE_ANGLE 0
 #define SERVO_DELAY 1000
-
 #endif

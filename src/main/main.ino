@@ -3,12 +3,24 @@
 /* GLOBALS */
 volatile int awake;
 volatile long prvMillisSleep = 0;
-LiquidCrystal_I2C lcd(I2C_ADDR, 16, 2);
-MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN); //RFID object
 int curr_eeprom_address;
-Servo myServo;
 char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH + 1]; //array of null-ended strings
 int UIDStringsArray_size; //number of elements in the array
+String keypadCode;
+byte rowPins[numKeypadRows] = {R1, R2, R3, R4};
+byte colPins[numKeypadCols]= {C1, C2, C3, C4};
+char keymap[numKeypadRows][numKeypadCols] = {
+{'1', '2', '3', 'A'}, 
+{'4', '5', '6', 'B'}, 
+{'7', '8', '9', 'C'},
+{'*', '0', '#', 'D'}
+};
+
+/* OBJECTS */
+LiquidCrystal_I2C lcd(I2C_ADDR, 16, 2);
+MFRC522 mfrc522(RFID_SS_PIN, RFID_RST_PIN); //RFID object
+Servo myServo;
+Keypad myKeypad= Keypad(makeKeymap(keymap), rowPins, colPins, numKeypadRows, numKeypadCols);
 
 void setup() {
   // Ultrasound init
@@ -51,6 +63,11 @@ void writeLineToLcd(int lineNr, String text, bool clscr) {
   lcd.print(text);
 }
 
+void keypadEvent(KeypadEvent key) {
+  Serial.println("Key Pressed");
+}
+
+
 void checkProximity() {
   if(userInProximity(US_TRIG_PIN, US_ECHO_PIN)){
     awake = 1;
@@ -85,13 +102,17 @@ void setWelcomeMessage() {
     writeLineToLcd(1, WELCOME_MSG_L2, false);
 }
 
+void enterCodeMessage() {
+    writeLineToLcd(0, CODE_MSG, true);
+}
+
 void loop() {  
   checkSleepMode();
   
   if(awake == 0) {
     checkProximity(); //need to check only if awake is 0, the sleep mode is induced by internal timers  
   }
-  else { //only check for card if someone is close
+  else { //only check for card or key if someone is close
     String uid = processRFID(mfrc522);
     if(!uid.equals("")) {
       if(presentInUIDArray(uid)) {
@@ -101,9 +122,19 @@ void loop() {
       }
       else {
         writeLineToLcd(0, "Access denied", true);
-        delay(SERVO_DELAY);     
         setWelcomeMessage();
       }
+    }
+
+    char key = myKeypad.getKey();
+    if(key) {
+      retrieveKeyCode(myKeypad, key);
+      if(keypadCode.equals("1234")) {
+        prvMillisSleep = millis();
+        allowAccess();
+        setWelcomeMessage();
+      }
+      // check against eeprom content
     }
   }
 }
