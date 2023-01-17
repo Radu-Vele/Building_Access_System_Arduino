@@ -64,11 +64,9 @@ void setup() {
   
   retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH, 0); //load eeprom data in UIDStringsArray
   retrieveEEPROMArrayOfStrings(KEY_CODEs_START_ADDRESS, KEY_CODE_LENGTH, 1); //load eeprom data in Keycodes array
-
-  for(int i = 0; i < UIDStringsArray_size; i++) {
-    Serial.println(UIDStringsArray[i]);
+  for(int i = 0; i < keyCodeStringsArraySize; i++) {
+    Serial.println(keyCodeStringsArray[i]);
   }
-
   //Servo init
   myServo.attach(SERVO_PIN);
   myServo.write(SERVO_CLOSE_ANGLE);
@@ -155,7 +153,7 @@ void parseBluetoothCommand() {
       }
     }
     else if (command.equals("auth")) {
-      //TODO: Check against EEPROM content
+      //TODO: get a password that must match any keycode memory entry but the first;
       userAuth = true;
     }
     
@@ -163,7 +161,9 @@ void parseBluetoothCommand() {
   else if(bluetoothCommandReceived.startsWith("{admin ")) {
     String command = bluetoothCommandReceived.substring(7, bluetoothCommandReceived.length() - 2); //get actual command
     adminMode = true;
+    writeLineToLcd(0, "Admin mode", true);
     if(command.equals("auth")) {
+      // TODO: Get a password that must match with the first element of the keycode array
       adminAuth = true;
     }
     else if(command.equals("access")) {
@@ -231,6 +231,7 @@ void parseBluetoothCommand() {
     else if(command.equals("logout")) {
       adminAuth = false;
       adminMode = false;
+      writeLineToLcd(0, "User mode", true);
     }
   }
 }
