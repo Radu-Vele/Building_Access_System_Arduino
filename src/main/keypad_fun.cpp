@@ -1,6 +1,16 @@
 #include "keypad_fun.h"
 
-void retrieveKeyCode(Keypad myKeypad, char initialKey) {
+void configureScreen() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Input pin (4)");
+  lcd.setCursor(0, 1);
+  lcd.print('*');
+}
+
+String retrieveKeyCode(Keypad myKeypad, char initialKey) {
+  configureScreen();
+  String keypadCode;
   keypadCode.reserve(4);
   keypadCode = "";
   keypadCode += initialKey;
@@ -11,8 +21,9 @@ void retrieveKeyCode(Keypad myKeypad, char initialKey) {
       if(gotKey != '#') {
         keypadCode += gotKey;
       }
+      lcd.print('*');
     }
   } while(gotKey != '#');
-  // TODO: show * on lcd as user inputs code
+  return keypadCode;
   // TODO: add a timeout until the user can insert;
 }

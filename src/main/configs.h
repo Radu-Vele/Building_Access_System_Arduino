@@ -22,29 +22,8 @@
 #define WELCOME_MSG_L1 "Welcome!"
 #define WELCOME_MSG_L2 "Scan your card!"
 #define ASLEEP_MSG "Zzz..."
-#define CODE_MSG "Enter your code!"
 
-
-//Keypad PINs
-//white
-#define K_R1 22 
-//purple
-#define K_R2 23 
-//brown
-#define K_R3 24
-//red
-#define K_R4 25
-
-//green
-#define K_C1 26
-//blue
-#define K_C2 27
-//orange
-#define K_C3 28
-//yellow
-#define K_C4 29
-
-//#define INIT_EEPROM
+#define INIT_EEPROM
 
 #define SERVO_PIN 3
 #define SERVO_OPEN_ANGLE 90

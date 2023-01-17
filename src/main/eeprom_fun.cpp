@@ -23,17 +23,27 @@ char* readStringFromEEPROM(int startAddress, int len) {
   return readValue;
 }
 
-void retrieveEEPROMArrayOfStrings(int startAddress, int stringLen) {
+void retrieveEEPROMArrayOfStrings(int startAddress, int stringLen, int mode) {
   int nrOfElements;
   
   EEPROM.get(startAddress, nrOfElements);
   startAddress += sizeof(nrOfElements);
-  UIDStringsArray_size = nrOfElements; //update the global size
+  if(mode == 0) {
+    UIDStringsArray_size = nrOfElements; //update the global size
+  }
+  else {
+    keyCodeStringsArraySize = nrOfElements;
+  }
 
   for(int i = 0; i < nrOfElements; i++) {
       char* currReadString = readStringFromEEPROM(startAddress, stringLen);
       for(int j = 0; j < stringLen + 1; j++) { //add the string to the global array
-        UIDStringsArray[i][j] = currReadString[j];
+        if(mode == 0) {
+          UIDStringsArray[i][j] = currReadString[j];
+        }
+        else {
+          keyCodeStringsArray[i][j] = currReadString[j];
+        }
       }
     
       free(currReadString);
@@ -42,6 +52,7 @@ void retrieveEEPROMArrayOfStrings(int startAddress, int stringLen) {
 }
 
 void storeInitialCodes() {
+  // UIDs
   char uid1[UID_LENGTH] = "31 1D 1C 1D";
   char uid2[UID_LENGTH] = "41 1D 1C 3D";
   int initialLen = 2;
@@ -55,16 +66,41 @@ void storeInitialCodes() {
 
   writeStringToEEPROM(uid2, UID_LENGTH, currAddress);
   currAddress += UID_LENGTH;
+
+  //Keycodes
+  char keyCode1[KEY_CODE_LENGTH]="A792";
+  char keyCode2[KEY_CODE_LENGTH]="0000";
+
+  currAddress = KEY_CODEs_START_ADDRESS;
+  EEPROM.put(currAddress,initialLen);
+  currAddress += sizeof(int);
+
+  writeStringToEEPROM(keyCode1, KEY_CODE_LENGTH, currAddress);
+  currAddress += KEY_CODE_LENGTH;
+
+  writeStringToEEPROM(keyCode2, KEY_CODE_LENGTH, currAddress);
+  currAddress += KEY_CODE_LENGTH;
 }
 
 bool presentInUIDArray(String uid) {
   char charArrUID[UID_LENGTH + 1];
-  uid.toCharArray(charArrUID, charArrUID);
+  uid.toCharArray(charArrUID, UID_LENGTH + 1);
   charArrUID[11] = '\0';
+
   for(int i = 0; i < UIDStringsArray_size; i++){
-    //Serial.println(charArrUID);
-    Serial.println(i);
     if(strcmp(charArrUID, UIDStringsArray[i]) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool presentInKeyCodeArray(String readCode) {
+  char charArrKey[KEY_CODE_LENGTH + 1];
+  readCode.toCharArray(charArrKey, KEY_CODE_LENGTH + 1);
+  charArrKey[4] = '\0';
+  for(int i = 0; i < keyCodeStringsArraySize; i++) {
+    if(strcmp(charArrKey, keyCodeStringsArray[i]) == 0) {
       return true;
     }
   }

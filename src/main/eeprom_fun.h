@@ -14,12 +14,19 @@
 extern char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH + 1];
 extern int UIDStringsArray_size;
 
+extern char keyCodeStringsArray[KEY_CODE_ARR_MAX_SIZE][KEY_CODE_LENGTH + 1];
+extern int keyCodeStringsArraySize;
+
 void writeStringToEEPROM(String string, int startAddress);
 
 /**
  * Populates the UIDStringsArray from the EEPROM
+ * 
+ * @param
+ *  * mode - 0 for UID retrieval
+ *         - 1 for keyCode retrieval
  */
-void retrieveEEPROMArrayOfStrings(int startAddress, int stringLen);
+void retrieveEEPROMArrayOfStrings(int startAddress, int stringLen,  int mode);
 
 char* readStringFromEEPROM(int startAddress, int len);
 
@@ -31,4 +38,5 @@ void storeInitialCodes();
 // Check if receive input is present in the EEPROM
 bool presentInUIDArray(String uid);
 bool presentInKeyCodeArray(String readCode);
+
 #endif

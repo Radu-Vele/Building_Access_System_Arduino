@@ -4,9 +4,16 @@
 volatile int awake;
 volatile long prvMillisSleep = 0;
 int curr_eeprom_address;
+
+// UID storage
 char UIDStringsArray[UID_ARR_MAX_SIZE][UID_LENGTH + 1]; //array of null-ended strings
 int UIDStringsArray_size; //number of elements in the array
-String keypadCode;
+
+//Key Codes storage
+char keyCodeStringsArray[KEY_CODE_ARR_MAX_SIZE][KEY_CODE_LENGTH + 1];
+int keyCodeStringsArraySize;
+
+//Keypad settings
 byte rowPins[numKeypadRows] = {R1, R2, R3, R4};
 byte colPins[numKeypadCols]= {C1, C2, C3, C4};
 char keymap[numKeypadRows][numKeypadCols] = {
@@ -44,11 +51,12 @@ void setup() {
   lcd.print("Initialized ok");
 
   //EEPROM init
-  curr_eeprom_address = EEPROM_START_ADDRESS;
   #ifdef INIT_EEPROM
   storeInitialCodes();   //store initial codes in eeprom
   #endif
-  retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH); //load eeprom data in UIDStringsArray
+  
+  retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH, 0); //load eeprom data in UIDStringsArray
+  retrieveEEPROMArrayOfStrings(KEY_CODEs_START_ADDRESS, KEY_CODE_LENGTH, 1); //load eeprom data in Keycodes array
 
   //Servo init
   myServo.attach(SERVO_PIN);
@@ -62,11 +70,6 @@ void writeLineToLcd(int lineNr, String text, bool clscr) {
   lcd.setCursor(0, lineNr);
   lcd.print(text);
 }
-
-void keypadEvent(KeypadEvent key) {
-  Serial.println("Key Pressed");
-}
-
 
 void checkProximity() {
   if(userInProximity(US_TRIG_PIN, US_ECHO_PIN)){
@@ -102,10 +105,6 @@ void setWelcomeMessage() {
     writeLineToLcd(1, WELCOME_MSG_L2, false);
 }
 
-void enterCodeMessage() {
-    writeLineToLcd(0, CODE_MSG, true);
-}
-
 void loop() {  
   checkSleepMode();
   
@@ -121,20 +120,27 @@ void loop() {
         setWelcomeMessage();
       }
       else {
+        prvMillisSleep = millis();
         writeLineToLcd(0, "Access denied", true);
+        delay(SERVO_DELAY);
         setWelcomeMessage();
       }
     }
 
     char key = myKeypad.getKey();
     if(key) {
-      retrieveKeyCode(myKeypad, key);
-      if(keypadCode.equals("1234")) {
+      String keypadCode = retrieveKeyCode(myKeypad, key);
+      if(presentInKeyCodeArray(keypadCode)) {
         prvMillisSleep = millis();
         allowAccess();
         setWelcomeMessage();
       }
-      // check against eeprom content
+      else {
+        prvMillisSleep = millis();
+        writeLineToLcd(0, "Access denied", true);
+        delay(SERVO_DELAY);
+        setWelcomeMessage();
+      }
     }
   }
 }
