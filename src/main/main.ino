@@ -27,6 +27,8 @@ char keymap[numKeypadRows][numKeypadCols] = {
 String bluetoothCommandReceived = "";
 bool bluetoothCommandComplete = false;
 bool adminMode = false;
+bool adminAuth = false;
+bool userAuth = false;
 
 /* OBJECTS */
 LiquidCrystal_I2C lcd(I2C_ADDR, 16, 2);
@@ -62,6 +64,10 @@ void setup() {
   
   retrieveEEPROMArrayOfStrings(UIDs_START_ADDRESS, UID_LENGTH, 0); //load eeprom data in UIDStringsArray
   retrieveEEPROMArrayOfStrings(KEY_CODEs_START_ADDRESS, KEY_CODE_LENGTH, 1); //load eeprom data in Keycodes array
+
+  for(int i = 0; i < UIDStringsArray_size; i++) {
+    Serial.println(UIDStringsArray[i]);
+  }
 
   //Servo init
   myServo.attach(SERVO_PIN);
@@ -127,7 +133,6 @@ void serialEvent1() {
   while(Serial1.available()) {
     char inChar = (char)Serial1.read();
     bluetoothCommandReceived += inChar;
-    Serial.println(inChar);
     if(inChar == '\n') {
       bluetoothCommandComplete = true;
     }
@@ -135,18 +140,103 @@ void serialEvent1() {
 }
 
 void parseBluetoothCommand() {
+  Serial.println(bluetoothCommandReceived);
   if(bluetoothCommandReceived.startsWith("{user ")) {
-    allowRemoteAccess();
-    setWelcomeMessage();
+    String command = bluetoothCommandReceived.substring(6, bluetoothCommandReceived.length() - 2); //get actual command
+    
+    if(command.equals("access")) {
+      if(userAuth) {
+        allowRemoteAccess();
+        setWelcomeMessage();
+        userAuth = false;
+      }
+      else {
+        Serial1.write(ERR_AUTH);
+      }
+    }
+    else if (command.equals("auth")) {
+      //TODO: Check against EEPROM content
+      userAuth = true;
+    }
+    
   }
   else if(bluetoothCommandReceived.startsWith("{admin ")) {
+    String command = bluetoothCommandReceived.substring(7, bluetoothCommandReceived.length() - 2); //get actual command
     adminMode = true;
+    if(command.equals("auth")) {
+      adminAuth = true;
+    }
+    else if(command.equals("access")) {
+      if(adminAuth) {
+        allowRemoteAccess();
+        setWelcomeMessage();
+        adminAuth = false;
+      }
+      else {
+        Serial1.write(ERR_AUTH);
+      }
+    }
+    else if(command.equals("addCard")) {
+      if(adminAuth){
+        String readUID = waitForCard(mfrc522);
+        
+        if(!presentInUIDArray(readUID, NULL)) {
+          char charArrReadUID[readUID.length() + 1];
+          readUID.toCharArray(charArrReadUID, readUID.length() + 1);
+          charArrReadUID[UID_LENGTH] = '\0';
+          for(int i = 0; i < UID_LENGTH + 1; i++) { //update array
+            UIDStringsArray[UIDStringsArray_size][i] = charArrReadUID[i];
+          }
+          
+          UIDStringsArray_size++;
+          Serial.println(UIDStringsArray_size);
+          //save in memory
+          updateMemory(0);
+        }
+        else {
+          Serial1.write(ERR_ALREADY_IN);
+        }
+      }
+      else {
+        Serial1.write(ERR_AUTH);
+      }
+      adminAuth = false;
+    }
+    else if(command.equals("removeCard")) {
+      if(adminAuth){
+        String readUID = waitForCard(mfrc522);
+        int deleteIndex;
+        if(presentInUIDArray(readUID, &deleteIndex)) {
+          
+          if(deleteIndex != UIDStringsArray_size) {
+            //get index of the present and swap it with the last element of the array
+            for(int i = 0; i < UID_LENGTH; i++) {
+              UIDStringsArray[deleteIndex][i] = UIDStringsArray[UIDStringsArray_size - 1][i];
+            }
+          }
+          
+          UIDStringsArray_size--;
+          //save in memory
+          updateMemory(0);
+        }
+        else {
+          Serial1.write(ERR_NOT_PRESENT);
+        }
+      }
+      else {
+        Serial1.write(ERR_AUTH);
+      }
+      adminAuth = false;
+    }
+    else if(command.equals("logout")) {
+      adminAuth = false;
+      adminMode = false;
+    }
   }
 }
 
-void checkBluetoothCommand() {
+void checkForBluetoothCommand() {
     if(bluetoothCommandComplete) {
-      Serial.println(bluetoothCommandReceived);
       parseBluetoothCommand();
       bluetoothCommandComplete = false;
       bluetoothCommandReceived = "";
@@ -154,7 +244,8 @@ void checkBluetoothCommand() {
 }
 
 void userModeFlow() {
-    checkBluetoothCommand();
+    checkForBluetoothCommand(); // can be done while in sleep mode
+  
     checkSleepMode();
     
     if(awake == 0) {
@@ -163,7 +254,7 @@ void userModeFlow() {
     else { //only check for card or key if someone is close
       String uid = processRFID(mfrc522);
       if(!uid.equals("")) {
-        if(presentInUIDArray(uid)) {
+        if(presentInUIDArray(uid, NULL)) {
           prvMillisSleep = millis();
           allowAccess();
           setWelcomeMessage();
@@ -195,7 +286,7 @@ void userModeFlow() {
 }
 
 void adminModeFlow() {
-  checkBluetoothCommand();
+  checkForBluetoothCommand();
 }
 
 void loop() {

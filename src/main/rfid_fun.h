@@ -22,4 +22,5 @@
 */
 String processRFID(MFRC522 rfid);
 String retrieveCardUID(MFRC522 rfid);
+String waitForCard(MFRC522 rfid);
 #endif

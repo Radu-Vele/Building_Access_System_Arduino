@@ -22,8 +22,11 @@
 #define WELCOME_MSG_L1 "Welcome!"
 #define WELCOME_MSG_L2 "Scan your card!"
 #define ASLEEP_MSG "Zzz..."
+#define ERR_AUTH "ERR Auth"
+#define ERR_ALREADY_IN "ERR AlreadyIn"
+#define ERR_NOT_PRESENT "ERR UID Not Present"
 
-#define INIT_EEPROM
+//#define INIT_EEPROM
 
 #define SERVO_PIN 3
 #define SERVO_OPEN_ANGLE 90

@@ -82,13 +82,17 @@ void storeInitialCodes() {
   currAddress += KEY_CODE_LENGTH;
 }
 
-bool presentInUIDArray(String uid) {
+bool presentInUIDArray(String uid, int* index) {
   char charArrUID[UID_LENGTH + 1];
   uid.toCharArray(charArrUID, UID_LENGTH + 1);
-  charArrUID[11] = '\0';
+  charArrUID[UID_LENGTH] = '\0';
 
   for(int i = 0; i < UIDStringsArray_size; i++){
     if(strcmp(charArrUID, UIDStringsArray[i]) == 0) {
+      if(index) {
+        *index = i;
+      }
+      
       return true;
     }
   }
@@ -98,11 +102,48 @@ bool presentInUIDArray(String uid) {
 bool presentInKeyCodeArray(String readCode) {
   char charArrKey[KEY_CODE_LENGTH + 1];
   readCode.toCharArray(charArrKey, KEY_CODE_LENGTH + 1);
-  charArrKey[4] = '\0';
+  charArrKey[KEY_CODE_LENGTH] = '\0';
   for(int i = 0; i < keyCodeStringsArraySize; i++) {
     if(strcmp(charArrKey, keyCodeStringsArray[i]) == 0) {
       return true;
     }
   }
   return false;
+}
+
+void updateMemory(int mode) {
+  int startAddress;
+  int arrSize;
+  int wordSize;
+  if(mode == 0) {
+    startAddress = UIDs_START_ADDRESS;
+    arrSize = UIDStringsArray_size;
+    wordSize = UID_LENGTH;
+  }
+  else {
+    startAddress = KEY_CODEs_START_ADDRESS;
+    arrSize = keyCodeStringsArraySize;
+    wordSize = KEY_CODE_LENGTH;
+  }
+  Serial.print("New size: ");
+  Serial.println(arrSize);
+  
+  int currAddress = startAddress;
+  
+  EEPROM.put(currAddress, arrSize);
+  currAddress += sizeof(int);
+
+  
+  if(mode == 0) {
+    for(int i = 0; i < arrSize; i++) {
+      writeStringToEEPROM(UIDStringsArray[i], wordSize, currAddress);
+      currAddress += wordSize;
+    }
+  }
+  else {
+    for(int i = 0; i < arrSize; i++) {
+      writeStringToEEPROM(keyCodeStringsArray[i], wordSize, currAddress);
+      currAddress += wordSize;
+    }
+  }
 }

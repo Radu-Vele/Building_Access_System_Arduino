@@ -31,3 +31,20 @@ String retrieveCardUID(MFRC522 rfid) {
   
   return content.substring(1); 
 }
+
+/**
+ * @brief Blocking function at the moment
+ * 
+ * @param rfid 
+ */
+String waitForCard(MFRC522 rfid) {
+  //wait for user to add card
+  String uid;
+  while(true) {
+    uid = processRFID(rfid);
+    if(!uid.equals("")) {
+      break;
+    }
+  }
+  return uid;
+}
