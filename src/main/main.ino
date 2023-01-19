@@ -125,6 +125,9 @@ void setWelcomeMessage() {
     writeLineToLcd(1, WELCOME_MSG_L2, false);
 }
 
+/**
+ * Check for serial input via bluetooth
+ */
 void serialEvent1() {
   String bluetoothInput;
   bluetoothInput = "";
@@ -137,11 +140,9 @@ void serialEvent1() {
   }
 }
 
-void parseBluetoothCommand() {
-  Serial.println(bluetoothCommandReceived);
-  if(bluetoothCommandReceived.startsWith("{user ")) {
-    String command = bluetoothCommandReceived.substring(6, bluetoothCommandReceived.length() - 2); //get actual command
-    
+void parseUserCommand() {
+  String command = bluetoothCommandReceived.substring(6, bluetoothCommandReceived.length() - 2); //get actual command
+    // Access Request
     if(command.equals("access")) {
       if(userAuth) {
         allowRemoteAccess();
@@ -152,116 +153,143 @@ void parseBluetoothCommand() {
         Serial1.write(ERR_AUTH);
       }
     }
+    //Authentication Request
     else if (command.startsWith("auth")) {
       String password = command.substring(4);
       int index;
       if(presentInKeyCodeArray(password, &index)){
         if(index == 0) {
-          Serial1.write(ERR_PASSW); //consider providing the admin password as a user incorrect (security reasons)
+          Serial1.write(ERR_PASSW);
         }
         else {
           userAuth = true;
+          Serial1.write(USER_SUCC_MSG);
         }
       }
       else {
         Serial1.write(ERR_PASSW);
       }      
     }
-  }
-  else if(bluetoothCommandReceived.startsWith("{admin ")) {
-    String command = bluetoothCommandReceived.substring(7, bluetoothCommandReceived.length() - 2); //get actual command
-    
-    adminMode = true;
-    writeLineToLcd(0, "Admin mode", true);
-    
-    if (command.startsWith("auth")) {
-      String password = command.substring(4);
-      int index;
-      if(presentInKeyCodeArray(password, &index)){
-        if(index != 0) {
-          Serial1.write(ERR_PASSW); //consider providing the admin password as a user incorrect (security reasons)
-          adminMode = false;
-          writeLineToLcd(0, "User mode", true);
-        }
-        else {
-          adminAuth = true;
-        }
-      }
-      else {
+}
+
+void parseAdminCommand() {
+  String command = bluetoothCommandReceived.substring(7, bluetoothCommandReceived.length() - 2); //get actual command
+  
+  if (command.startsWith("auth")) {
+    String password = command.substring(4);
+    int index;
+    if(presentInKeyCodeArray(password, &index)){
+      if(index != 0) {
         Serial1.write(ERR_PASSW);
         adminMode = false;
-        writeLineToLcd(0, "User mode", true);
-      }  
-      
-      // TODO: Get a password that must match with the first element of the keycode array
-    }
-    else if(command.equals("access")) {
-      if(adminAuth) {
-        allowRemoteAccess();
-        setWelcomeMessage();
-        adminAuth = false;
       }
       else {
-        Serial1.write(ERR_AUTH);
+        adminMode = true;
+        adminAuth = true;
+        writeLineToLcd(0, "Admin Mode", true);
+        Serial1.write(ADMIN_SUCC_MSG);
       }
     }
-    else if(command.equals("addCard")) {
-      if(adminAuth){
-        String readUID = waitForCard(mfrc522);
-        
-        if(!presentInUIDArray(readUID, NULL)) {
-          char charArrReadUID[readUID.length() + 1];
-          readUID.toCharArray(charArrReadUID, readUID.length() + 1);
-          charArrReadUID[UID_LENGTH] = '\0';
-          for(int i = 0; i < UID_LENGTH + 1; i++) { //update array
-            UIDStringsArray[UIDStringsArray_size][i] = charArrReadUID[i];
-          }
-          
-          UIDStringsArray_size++;
-          Serial.println(UIDStringsArray_size);
-          //save in memory
-          updateMemory(0);
-        }
-        else {
-          Serial1.write(ERR_ALREADY_IN);
-        }
-      }
-      else {
-        Serial1.write(ERR_AUTH);
-      }
-      adminAuth = false;
-    }
-    else if(command.equals("removeCard")) {
-      if(adminAuth){
-        String readUID = waitForCard(mfrc522);
-        int deleteIndex;
-        if(presentInUIDArray(readUID, &deleteIndex)) {
-          
-          if(deleteIndex != UIDStringsArray_size) {
-            //get index of the present and swap it with the last element of the array
-            for(int i = 0; i < UID_LENGTH; i++) {
-              UIDStringsArray[deleteIndex][i] = UIDStringsArray[UIDStringsArray_size - 1][i];
-            }
-          }
-          
-          UIDStringsArray_size--;
-          //save in memory
-          updateMemory(0);
-        }
-        else {
-          Serial1.write(ERR_NOT_PRESENT);
-        }
-      }
-      else {
-        Serial1.write(ERR_AUTH);
-      }
-      adminAuth = false;
-    }
-    else if(command.equals("logout")) {
-      adminAuth = false;
+    else {
+      Serial1.write(ERR_PASSW);
       adminMode = false;
-      writeLineToLcd(0, "User mode", true);
+    }    
+  }
+  else if(command.equals("access")) {
+    if(adminAuth) {
+      allowRemoteAccess();
+      writeLineToLcd(0, "Admin Mode", true);
     }
+    else {
+      Serial1.write(ERR_AUTH);
+    }
+  }
+  else if(command.equals("addCard")) {
+    if(adminAuth){
+      writeLineToLcd(0, "Add - Ready", true);
+      writeLineToLcd(1, "Bring Card Close", false);
+      String readUID = waitForCard(mfrc522);
+      
+      if(!presentInUIDArray(readUID, NULL)) {
+        char charArrReadUID[readUID.length() + 1];
+        readUID.toCharArray(charArrReadUID, readUID.length() + 1);
+        charArrReadUID[UID_LENGTH] = '\0';
+        for(int i = 0; i < UID_LENGTH + 1; i++) { //update array
+          UIDStringsArray[UIDStringsArray_size][i] = charArrReadUID[i];
+        }
+        
+        UIDStringsArray_size++;
+        Serial.println(UIDStringsArray_size);
+        //save in memory
+        updateMemory(0);
+        writeLineToLcd(0, "Successful", true);
+        writeLineToLcd(1, "Operation! :)", false);
+        delay(SERVO_DELAY);
+        writeLineToLcd(0, "Admin Mode", true);
+      }
+      else {
+        Serial1.write(ERR_ALREADY_IN);
+        writeLineToLcd(0, "Failed", true);
+        writeLineToLcd(1, "Operation! :(", false);
+        delay(SERVO_DELAY);
+        writeLineToLcd(0, "Admin Mode", true);
+      }
+    }
+    else {
+      Serial1.write(ERR_AUTH);
+    }
+  }
+  else if(command.equals("removeCard")) {
+    if(adminAuth){
+      writeLineToLcd(0, "Remove - Ready", true);
+      writeLineToLcd(1, "Bring Card Close", false);
+      String readUID = waitForCard(mfrc522);
+      int deleteIndex;
+      if(presentInUIDArray(readUID, &deleteIndex)) {
+        
+        if(deleteIndex != UIDStringsArray_size) {
+          //get index of the present and swap it with the last element of the array
+          for(int i = 0; i < UID_LENGTH; i++) {
+            UIDStringsArray[deleteIndex][i] = UIDStringsArray[UIDStringsArray_size - 1][i];
+          }
+        }
+        
+        UIDStringsArray_size--;
+        //save in memory
+        updateMemory(0);
+        writeLineToLcd(0, "Successful", true);
+        writeLineToLcd(1, "Operation! :)", false);
+        delay(SERVO_DELAY);
+        writeLineToLcd(0, "Admin Mode", true);
+      }
+      else {
+        Serial1.write(ERR_NOT_PRESENT);
+        writeLineToLcd(0, "Failed", true);
+        writeLineToLcd(1, "Operation! :(", false);
+        delay(SERVO_DELAY);
+        writeLineToLcd(0, "Admin Mode", true);
+      }
+    }
+    else {
+      Serial1.write(ERR_AUTH);
+    }
+  }
+  else if(command.equals("logout")) {
+    adminAuth = false;
+    adminMode = false;
+    writeLineToLcd(0, "Admin Logged Out", true);
+    delay(SERVO_DELAY);
+    writeLineToLcd(0, ASLEEP_MSG, true);
+  }
+}
+
+void parseBluetoothCommand() {
+  Serial.println(bluetoothCommandReceived);
+  if(bluetoothCommandReceived.startsWith("{user ")) {
+    parseUserCommand();
+  }
+  else if(bluetoothCommandReceived.startsWith("{admin ")) {
+    parseAdminCommand();
   }
 }
 
@@ -273,15 +301,21 @@ void checkForBluetoothCommand() {
     }
 }
 
+/**
+ * Receive both remote and physical commands for opening the door
+ */
 void userModeFlow() {
+    // Check Open Remote
     checkForBluetoothCommand(); // can be done while in sleep mode
   
     checkSleepMode();
     
     if(awake == 0) {
-      checkProximity(); //need to check only if awake is 0, the sleep mode is induced by internal timers  
+      checkProximity();
     }
     else { //only check for card or key if someone is close
+      
+      // Check RFID
       String uid = processRFID(mfrc522);
       if(!uid.equals("")) {
         if(presentInUIDArray(uid, NULL)) {
@@ -296,7 +330,8 @@ void userModeFlow() {
           setWelcomeMessage();
         }
       }
-  
+
+      // Check Keypad
       char key = myKeypad.getKey();
       if(key) {
         String keypadCode = retrieveKeyCode(myKeypad, key);
@@ -315,6 +350,9 @@ void userModeFlow() {
     }
 }
 
+/**
+ * Implies receiving only bluetooth commands
+ */
 void adminModeFlow() {
   checkForBluetoothCommand();
 }

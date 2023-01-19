@@ -26,6 +26,8 @@
 #define ERR_ALREADY_IN "ERR AlreadyIn"
 #define ERR_NOT_PRESENT "ERR UID Not Present"
 #define ERR_PASSW "ERR Password not correct"
+#define ADMIN_SUCC_MSG "SUCC Welcome, dear Admin!"
+#define USER_SUCC_MSG "SUCC Welcome, dear User!"
  
 //#define INIT_EEPROM
 
